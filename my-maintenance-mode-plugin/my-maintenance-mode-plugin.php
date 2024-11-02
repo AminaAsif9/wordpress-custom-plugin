@@ -7,7 +7,6 @@
 *Version: 1.0.0
 */
 
-
 // Enqueue Customizer JavaScript
 function smm_customize_preview_js() {
     wp_enqueue_script('smm-customize-preview', plugins_url('/customizer.js', __FILE__), array('customize-preview'), null, true);
@@ -31,6 +30,20 @@ function smm_customize_register($wp_customize) {
         'section'  => 'smm_settings_section',
         'settings' => 'smm_mobile_bg_image',
     )));
+
+    // Add setting for YouTube video background
+    $wp_customize->add_setting('smm_youtube_bg_video', array(
+        'default' => '',
+        'sanitize_callback' => 'esc_url_raw',
+    ));
+
+    // Add control for YouTube video background
+    $wp_customize->add_control('smm_youtube_bg_video_control', array(
+        'label'    => __('YouTube Video Background URL', 'smm'),
+        'section'  => 'smm_settings_section',
+        'settings' => 'smm_youtube_bg_video',
+        'type'     => 'url',
+    ));
 }
 add_action('customize_register', 'smm_customize_register');
 
@@ -45,31 +58,40 @@ function smm_maintenance_mode() {
 
         // Get the mobile background image URL
         $mobile_bg_image = get_theme_mod('smm_mobile_bg_image');
+        // Get the YouTube video background URL
+        $youtube_bg_video = get_theme_mod('smm_youtube_bg_video');
 
-        // Default background image URL
         // Default background image URL
         $default_bg_image = plugins_url('assets/img/coming-soon.png', __FILE__);
 
-        // Output the centered text with styles and background image for mobile
-        echo '<div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; font-family: Arial, sans-serif;';
-        
-        // Apply background image if it exists, otherwise use the default
-        if ($mobile_bg_image) {
-            echo ' background-image: url(' . esc_url($mobile_bg_image) . ');';
+        // Output the maintenance mode page
+        echo '<div style="position: relative; width: 100%; height: 100vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: Arial, sans-serif; color: white;">';
+
+        if ($youtube_bg_video) {
+            // Embed YouTube video as background
+            echo '<iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1;" src="https://www.youtube.com/embed/' . esc_attr(extract_youtube_id($youtube_bg_video)) . '?autoplay=1&mute=1&loop=1&playlist=' . esc_attr(extract_youtube_id($youtube_bg_video)) . '&controls=0&showinfo=0&autohide=1&modestbranding=1" frameborder="0" allow="autoplay; loop; muted" allowfullscreen></iframe>';
+        } elseif ($mobile_bg_image) {
+            // Apply background image if it exists
+            echo '<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;  z-index: -1; background-image: url(' . esc_url($mobile_bg_image) . '); background-size: cover; background-position: center;"></div>';
         } else {
-            echo ' background-image: url(' . esc_url($default_bg_image) . ');';
+            // Apply default background image
+            echo '<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;  z-index: -1; background-image: url(' . esc_url($default_bg_image) . '); background-size: cover; background-position: center;"></div>';
         }
 
-        echo ' background-size: cover; background-position: center;">';
-        echo '<h1 style="font-size: 46px; font-weight: bold; margin: 0; color: white;">Under Construction</h1>';
-        echo '<h2 style="font-size: 22px; margin-top: 10px; color: white;">We will be back soon.</h2>';
+        // Content on top of the background
+        echo '<h1 style="font-size: 46px; font-weight: bold; margin: 0;">Under Construction</h1>';
+        echo '<h2 style="font-size: 22px; margin-top: 10px;">We will be back soon.</h2>';
         echo '</div>';
-        
+
         exit;
     }
 }
-
-// Hook the function to display the page before any content is rendered
 add_action('template_redirect', 'smm_maintenance_mode');
+
+// Helper function to extract YouTube video ID from URL
+function extract_youtube_id($url) {
+    parse_str(parse_url($url, PHP_URL_QUERY), $query);
+    return $query['v'] ?? '';
+}
 
 ?>
